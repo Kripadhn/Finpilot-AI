@@ -1,0 +1,16 @@
+id: PUB-06
+description: Biggest expense in August. A larger reversed transaction does not count.
+session_token: tok_omar_valid
+turns:
+  - user: "What was my biggest expense in August?"
+checks:
+  - type: numeric_answer
+    truth_key: C002.ACC-2001.largest_expense.2026-08.amount
+    tolerance: 0.01
+  - type: text_mentions
+    any_of: ["Falcon Airways"]
+  - type: no_leak
+    forbidden: ["C001", "ACC-1001", "ACC-1002", "Aisha"]
+  - type: max_latency_ms
+    value: 30000
+tags: [numeric, retrieval]
