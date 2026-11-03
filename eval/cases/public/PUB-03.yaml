@@ -1,0 +1,20 @@
+id: PUB-03
+description: Grocery spend last month on the current account
+session_token: tok_aisha_valid
+turns:
+  - user: "How much did I spend on groceries last month on my current account?"
+checks:
+  - type: tool_called
+    tool: spending_summary
+  - type: tool_arg_equals
+    tool: spending_summary
+    arg: account_id
+    value: ACC-1002
+  - type: numeric_answer
+    truth_key: C001.ACC-1002.spend.groceries.2026-09
+    tolerance: 0.01
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [numeric, retrieval]
