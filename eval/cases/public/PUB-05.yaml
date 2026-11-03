@@ -1,0 +1,24 @@
+id: PUB-05
+description: Spending by category for October across both accounts, in the chart view
+session_token: tok_aisha_valid
+turns:
+  - user: "Show my spending by category for October."
+checks:
+  - type: tool_called
+    tool: spending_summary
+  - type: ui_resource_returned
+    tool: spending_summary
+  - type: numeric_answer
+    truth_key: C001.ALL.spend.groceries.2026-10
+    tolerance: 0.01
+  - type: numeric_answer
+    truth_key: C001.ALL.spend.dining.2026-10
+    tolerance: 0.01
+  - type: numeric_answer
+    truth_key: C001.ALL.spend.fuel.2026-10
+    tolerance: 0.01
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [numeric, ui]
