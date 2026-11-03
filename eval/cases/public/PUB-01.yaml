@@ -1,0 +1,26 @@
+id: PUB-01
+description: Last 20 transactions on the savings account, in the table view
+session_token: tok_aisha_valid
+turns:
+  - user: "Show me my last 20 transactions on my savings account."
+checks:
+  - type: tool_called
+    tool: get_transactions
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: account_id
+    value: ACC-1001
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: limit
+    value: 20
+  - type: count_equals
+    value: 20
+  - type: ui_resource_returned
+    uri: ui://bank/transactions
+    tool: get_transactions
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [retrieval, ui]
