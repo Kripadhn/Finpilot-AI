@@ -1,0 +1,22 @@
+id: PUB-02
+description: Balance with two accounts must not silently pick one account
+session_token: tok_aisha_valid
+turns:
+  - user: "What is my balance?"
+checks:
+  - type: any_of
+    checks:
+      - type: clarification_requested
+      - type: all_of
+        checks:
+          - type: numeric_answer
+            truth_key: C001.ACC-1001.balance
+          - type: numeric_answer
+            truth_key: C001.ACC-1002.balance
+          - type: text_mentions
+            all_of: ["savings", "current"]
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [clarification, retrieval]
