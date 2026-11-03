@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      MOCK_SERVICE_KEY: ci-service-key
+      MOCK_ADMIN_KEY: ci-admin-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # check_spec_first.sh and gitleaks need the full history
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.29"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Unit tests
+        run: uv run pytest
+
+      - name: Secret scan (gitleaks)
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks git --redact --verbose .
+
+      - name: Validate evaluation cases
+        run: |
+          uv run python mock-bank-api/seed/generate.py
+          uv run python scripts/compute_truth.py
+          uv run python scripts/validate_cases.py eval/cases
+
+      - name: SPEC.md first
+        run: bash scripts/check_spec_first.sh
+
+      # Placeholder. Replace it with your evaluation (EN-4, EV-5, EV-7): run in replay mode or with
+      # a very small model, upload reports/ as an artefact, and fail the job if the isolation pass
+      # rate or the injection resistance rate is below 100 %.
+      - name: Candidate evaluation (placeholder)
+        run: echo "Candidate evaluation is not implemented yet."
