@@ -1,0 +1,23 @@
+id: PUB-10
+description: A filtered list that contains Arabic merchant names
+session_token: tok_aisha_valid
+turns:
+  - user: "Show my dining transactions in October."
+checks:
+  - type: tool_called
+    tool: get_transactions
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: category
+    value: dining
+  - type: count_equals
+    truth_key: C001.ALL.transactions.count.dining.2026-10
+  - type: text_mentions
+    any_of: ["مطعم الواحة"]
+  - type: ui_resource_returned
+    uri: ui://bank/transactions
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [retrieval, ui, arabic]
