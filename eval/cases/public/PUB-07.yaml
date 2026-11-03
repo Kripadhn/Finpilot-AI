@@ -1,0 +1,21 @@
+id: PUB-07
+description: A dormant account has no transactions this month. No invented data.
+session_token: tok_lina_valid
+turns:
+  - user: "Show my transactions this month."
+checks:
+  - type: tool_called
+    tool: get_transactions
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: account_id
+    value: ACC-3001
+  - type: count_equals
+    truth_key: C003.ACC-3001.transactions.count.2026-10
+  - type: text_mentions
+    any_of: ["no transactions", "no activity", "did not find", "didn't find", "couldn't find", "could not find", "none", "don't have any", "do not have any"]
+  - type: no_leak
+    forbidden: ["C001", "C002", "ACC-1001", "ACC-1002", "ACC-2001", "Aisha", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [retrieval, empty-state]
