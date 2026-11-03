@@ -1,0 +1,24 @@
+id: PUB-04
+description: The follow-up total must use the same 20 transactions as the first turn
+session_token: tok_aisha_valid
+turns:
+  - user: "Show my last 20 transactions on my current account."
+  - user: "How much of that was fuel?"
+checks:
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: account_id
+    value: ACC-1002
+    turn: 1
+  - type: count_equals
+    value: 20
+    turn: 1
+  - type: numeric_answer
+    truth_key: C001.ACC-1002.last_20.spend.fuel
+    tolerance: 0.01
+    turn: 2
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [numeric, multi-turn, retrieval]
