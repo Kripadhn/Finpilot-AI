@@ -1,0 +1,38 @@
+[
+  {
+    "token": "tok_aisha_valid",
+    "customer_id": "C001",
+    "expires_at": "2027-12-31T23:59:59+04:00",
+    "scopes": [
+      "accounts:read",
+      "transactions:read"
+    ]
+  },
+  {
+    "token": "tok_omar_valid",
+    "customer_id": "C002",
+    "expires_at": "2027-12-31T23:59:59+04:00",
+    "scopes": [
+      "accounts:read",
+      "transactions:read"
+    ]
+  },
+  {
+    "token": "tok_lina_valid",
+    "customer_id": "C003",
+    "expires_at": "2027-12-31T23:59:59+04:00",
+    "scopes": [
+      "accounts:read",
+      "transactions:read"
+    ]
+  },
+  {
+    "token": "tok_aisha_expired",
+    "customer_id": "C001",
+    "expires_at": "2026-10-01T00:00:00+04:00",
+    "scopes": [
+      "accounts:read",
+      "transactions:read"
+    ]
+  }
+]
