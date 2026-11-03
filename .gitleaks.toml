@@ -1,0 +1,8 @@
+# Default rules. A `truth_key` line in a case file looks like an API key to the generic rule.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "truth_key lines in evaluation cases"
+regexTarget = "line"
+regexes = ['''^\s*(?:-\s+)?truth_key:\s+[\w.-]+\s*$''']
