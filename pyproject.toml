@@ -7,6 +7,10 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn>=0.32",
     "faker>=30",
+    "bank-shared",
+    "mcp-bank-server",
+    "bank-agent",
+    "bank-eval-harness",
 ]
 
 [dependency-groups]
@@ -14,6 +18,7 @@ dev = [
     "httpx>=0.27",
     "jsonschema>=4.23",
     "pytest>=8.3",
+    "pytest-asyncio>=0.24",
     "pyyaml>=6.0",
     "ruff>=0.8",
 ]
@@ -21,9 +26,20 @@ dev = [
 [tool.uv]
 package = false
 
+[tool.uv.workspace]
+members = ["shared", "mcp-server", "agent", "eval/harness"]
+
+[tool.uv.sources]
+bank-shared = { workspace = true }
+mcp-bank-server = { workspace = true }
+bank-agent = { workspace = true }
+bank-eval-harness = { workspace = true }
+
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 pythonpath = ["mock-bank-api", "scripts"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 target-version = "py312"

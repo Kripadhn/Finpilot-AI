@@ -1,0 +1,19 @@
+[project]
+name = "mcp-bank-server"
+version = "1.0.0"
+description = "MCP server: banking tools, resources, prompts and MCP Apps UI resources"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.15",
+    "bank-shared",
+]
+
+[tool.uv.sources]
+bank-shared = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_bank_server"]
