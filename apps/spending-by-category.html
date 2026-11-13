@@ -1,0 +1,191 @@
+<!doctype html>
+<!-- MCP Apps view (spec 2026-01-26): spending-by-category chart for spending_summary.
+     Interactive both ways (UI-3): selecting a category calls get_transactions through the
+     host bridge (tools/call) and renders the returned rows. Self-contained, no external
+     resources or undeclared network calls (UI-8). -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Spending by category</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 12px;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: light-dark(#1a1d21, #e8eaed);
+    background: light-dark(#ffffff, #1e1f22);
+  }
+  h1 { font-size: 15px; margin: 0 0 2px; }
+  .scope { color: light-dark(#5f6368, #9aa0a6); margin: 0 0 10px; font-size: 13px; }
+  .row { display: grid; grid-template-columns: 110px 1fr 110px; gap: 8px; align-items: center;
+         padding: 3px 0; border: 0; background: none; width: 100%; text-align: left;
+         font: inherit; color: inherit; cursor: pointer; border-radius: 6px; }
+  .row:hover, .row:focus-visible { background: light-dark(#f1f3f4, #2d2e31);
+         outline: 2px solid light-dark(#1a73e8, #8ab4f8); outline-offset: -2px; }
+  .row .cat { overflow: hidden; text-overflow: ellipsis; }
+  .bar { height: 18px; border-radius: 4px; background: light-dark(#1a73e8, #8ab4f8); min-width: 2px; }
+  .val { text-align: right; font-variant-numeric: tabular-nums; }
+  .total { margin: 10px 0 2px; font-weight: 600; }
+  .hint { font-size: 12px; color: light-dark(#5f6368, #9aa0a6); margin: 2px 0 8px; }
+  .empty { padding: 22px 10px; text-align: center; color: light-dark(#5f6368, #9aa0a6);
+           border: 1px dashed light-dark(#dadce0, #3c4043); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  th, td { padding: 5px 8px; text-align: left; font-size: 13px; }
+  th { border-bottom: 2px solid light-dark(#dadce0, #3c4043); }
+  tbody tr { border-bottom: 1px solid light-dark(#f1f3f4, #2d2e31); }
+  td.amount, th.amount { text-align: right; font-variant-numeric: tabular-nums; }
+  #drill h2 { font-size: 14px; margin: 14px 0 4px; }
+  .loading { opacity: .6; }
+</style>
+</head>
+<body>
+<h1 id="title">Spending by category</h1>
+<p class="scope" id="scope"></p>
+<div id="chart" aria-live="polite"></div>
+<div id="drill" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ---- minimal MCP Apps host bridge (JSON-RPC 2.0 over postMessage) ---- */
+const pending = new Map();
+let nextId = 1;
+function post(message) { window.parent.postMessage(message, "*"); }
+function request(method, params) {
+  const id = nextId++;
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    post({ jsonrpc: "2.0", id, method, params });
+  });
+}
+function notify(method, params) { post({ jsonrpc: "2.0", method, params }); }
+
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (!msg || msg.jsonrpc !== "2.0") return;
+  if (msg.id !== undefined && pending.has(msg.id)) {
+    const p = pending.get(msg.id); pending.delete(msg.id);
+    msg.error ? p.reject(new Error(msg.error.message)) : p.resolve(msg.result);
+    return;
+  }
+  if (msg.method === "ui/notifications/tool-result") {
+    render(msg.params || {});
+  } else if (msg.method === "ping" && msg.id !== undefined) {
+    post({ jsonrpc: "2.0", id: msg.id, result: {} });
+  }
+});
+
+async function init() {
+  try {
+    await request("ui/initialize", {
+      protocolVersion: "2026-01-26",
+      appInfo: { name: "bank-spending-view", version: "1.0.0" },
+      appCapabilities: {},
+    });
+    notify("ui/notifications/initialized", {});
+  } catch (_) { /* host may push results regardless */ }
+}
+init();
+
+function reportSize() {
+  notify("ui/notifications/size-changed", { height: document.body.scrollHeight + 24 });
+}
+
+/* ---- rendering ---- */
+const aed = new Intl.NumberFormat("en-AE", { style: "currency", currency: "AED" });
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let currentScope = { accounts: [], period: {} };
+
+function render(result) {
+  const data = result.structuredContent || {};
+  currentScope = { accounts: (data.scope && data.scope.accounts) || [], period: data.period || {} };
+  const entries = Object.entries(data.by_category || {})
+    .filter(([, v]) => Number(v) > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  const bits = [];
+  if (currentScope.accounts.length === 1) {
+    const account = currentScope.accounts[0];
+    bits.push(`${account.type} account ${account.account_number_masked || ""}`);
+  } else if (currentScope.accounts.length > 1) {
+    bits.push(`${currentScope.accounts.length} accounts`);
+  }
+  if (currentScope.period.from || currentScope.period.to) {
+    bits.push(`${currentScope.period.from || "…"} → ${currentScope.period.to || "…"}`);
+  }
+  document.getElementById("scope").textContent = bits.join(" · ");
+
+  const chart = document.getElementById("chart");
+  document.getElementById("drill").innerHTML = "";
+  if (!entries.length) {
+    chart.innerHTML = '<div class="empty">No spending in this period.</div>';
+    reportSize();
+    return;
+  }
+  const max = entries[0][1];
+  chart.innerHTML =
+    entries.map(([cat, val]) => `
+      <button class="row" data-category="${esc(cat)}"
+              aria-label="Show ${esc(cat)} transactions, ${esc(aed.format(val))}">
+        <span class="cat">${esc(cat)}</span>
+        <span class="bar" style="width:${Math.max(2, (val / max) * 100)}%"></span>
+        <span class="val">${esc(aed.format(val))}</span>
+      </button>`).join("") +
+    `<p class="total">Total: ${esc(aed.format(Number(data.total) || 0))}</p>
+     <p class="hint">Select a category to see its transactions.</p>`;
+
+  for (const button of chart.querySelectorAll("button.row")) {
+    button.addEventListener("click", () => drill(button.dataset.category));
+  }
+  reportSize();
+}
+
+/* Drill-down: the declared, host-mediated tool call (UI-3). */
+async function drill(category) {
+  const drillBox = document.getElementById("drill");
+  drillBox.innerHTML = `<h2 class="loading">Loading ${esc(category)} transactions…</h2>`;
+  try {
+    const accounts = currentScope.accounts.length ? currentScope.accounts : [];
+    let items = [];
+    for (const account of accounts) {
+      const result = await request("tools/call", {
+        name: "get_transactions",
+        arguments: {
+          account_id: account.account_id,
+          from_date: currentScope.period.from || undefined,
+          to_date: currentScope.period.to || undefined,
+          category, limit: 100,
+        },
+      });
+      const sc = (result && result.structuredContent) || {};
+      items = items.concat(sc.items || []);
+    }
+    items.sort((a, b) => (a.booked_at < b.booked_at ? 1 : -1));
+    if (!items.length) {
+      drillBox.innerHTML = `<h2>${esc(category)}</h2><div class="empty">No transactions.</div>`;
+      reportSize();
+      return;
+    }
+    drillBox.innerHTML = `<h2>${esc(category)} transactions</h2>
+      <table>
+        <thead><tr><th scope="col">Date</th><th scope="col">Merchant</th>
+        <th scope="col">Status</th><th scope="col" class="amount">Amount</th></tr></thead>
+        <tbody>${items.map((t) => `<tr>
+          <td>${esc((t.booked_at || "").slice(0, 10))}</td>
+          <td dir="auto">${esc(t.merchant_name)}</td>
+          <td>${esc(t.status)}</td>
+          <td class="amount">${esc(aed.format(Number(t.amount) || 0))}</td>
+        </tr>`).join("")}</tbody>
+      </table>`;
+  } catch (error) {
+    drillBox.innerHTML = `<h2>${esc(category)}</h2>
+      <div class="empty">Could not load transactions: ${esc(error.message)}</div>`;
+  }
+  reportSize();
+}
+</script>
+</body>
+</html>

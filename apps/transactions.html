@@ -1,0 +1,142 @@
+<!doctype html>
+<!-- MCP Apps view (spec 2026-01-26): dynamic transactions table for get_transactions.
+     Self-contained: no external scripts, styles or network calls (UI-8).
+     Data arrives from the host via ui/notifications/tool-result; the view never fetches. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Transactions</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 12px;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: light-dark(#1a1d21, #e8eaed);
+    background: light-dark(#ffffff, #1e1f22);
+  }
+  h1 { font-size: 15px; margin: 0 0 2px; }
+  .scope { color: light-dark(#5f6368, #9aa0a6); margin: 0 0 10px; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; }
+  caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+  th, td { padding: 6px 10px; text-align: left; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+       color: light-dark(#5f6368, #9aa0a6);
+       border-bottom: 2px solid light-dark(#dadce0, #3c4043); }
+  tbody tr { border-bottom: 1px solid light-dark(#f1f3f4, #2d2e31); }
+  tbody tr:focus-visible { outline: 2px solid light-dark(#1a73e8, #8ab4f8); outline-offset: -2px; }
+  td.amount, th.amount { text-align: right; font-variant-numeric: tabular-nums; }
+  .debit  { color: light-dark(#b3261e, #f2b8b5); }
+  .credit { color: light-dark(#146c2e, #a6d8b0); }
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 9px;
+           background: light-dark(#f1f3f4, #3c4043); }
+  .badge.pending  { background: light-dark(#fef7e0, #4a4322); }
+  .badge.reversed { background: light-dark(#fce8e6, #4a2b28); text-decoration: line-through; }
+  .empty { padding: 22px 10px; text-align: center;
+           color: light-dark(#5f6368, #9aa0a6);
+           border: 1px dashed light-dark(#dadce0, #3c4043); border-radius: 8px; }
+  .more { margin-top: 8px; font-size: 12px; color: light-dark(#5f6368, #9aa0a6); }
+</style>
+</head>
+<body>
+<h1 id="title">Transactions</h1>
+<p class="scope" id="scope"></p>
+<div id="content" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ---- minimal MCP Apps host bridge (JSON-RPC 2.0 over postMessage) ---- */
+const pending = new Map();
+let nextId = 1;
+
+function post(message) { window.parent.postMessage(message, "*"); }
+function request(method, params) {
+  const id = nextId++;
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    post({ jsonrpc: "2.0", id, method, params });
+  });
+}
+function notify(method, params) { post({ jsonrpc: "2.0", method, params }); }
+
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (!msg || msg.jsonrpc !== "2.0") return;
+  if (msg.id !== undefined && pending.has(msg.id)) {
+    const p = pending.get(msg.id); pending.delete(msg.id);
+    msg.error ? p.reject(new Error(msg.error.message)) : p.resolve(msg.result);
+    return;
+  }
+  if (msg.method === "ui/notifications/tool-result") {
+    render(msg.params || {});
+  } else if (msg.method === "ping" && msg.id !== undefined) {
+    post({ jsonrpc: "2.0", id: msg.id, result: {} });
+  }
+});
+
+async function init() {
+  try {
+    await request("ui/initialize", {
+      protocolVersion: "2026-01-26",
+      appInfo: { name: "bank-transactions-view", version: "1.0.0" },
+      appCapabilities: {},
+    });
+    notify("ui/notifications/initialized", {});
+  } catch (_) { /* host may push results regardless */ }
+}
+init();
+
+function reportSize() {
+  notify("ui/notifications/size-changed", { height: document.body.scrollHeight + 24 });
+}
+
+/* ---- rendering ---- */
+const aed = new Intl.NumberFormat("en-AE", { style: "currency", currency: "AED" });
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function render(result) {
+  const data = result.structuredContent || {};
+  const items = data.items || [];
+  const account = data.account || {};
+  const bits = [];
+  if (account.type) bits.push(`${account.type} account ${account.account_number_masked || ""}`);
+  if (data.period && (data.period.from || data.period.to)) {
+    bits.push(`${data.period.from || "…"} → ${data.period.to || "…"}`);
+  }
+  if (data.category) bits.push(`category: ${data.category}`);
+  bits.push(`${items.length} item(s)`);
+  document.getElementById("scope").textContent = bits.join(" · ");
+
+  const content = document.getElementById("content");
+  if (!items.length) {
+    content.innerHTML = '<div class="empty">No transactions in this period.</div>';
+    reportSize();
+    return;
+  }
+  const rows = items.map((t) => {
+    const amount = Number(t.amount) || 0;
+    const cls = amount < 0 ? "debit" : "credit";
+    return `<tr tabindex="0">
+      <td>${esc((t.booked_at || "").slice(0, 10))}</td>
+      <td dir="auto">${esc(t.merchant_name)}</td>
+      <td>${esc(t.category)}</td>
+      <td><span class="badge ${esc(t.status)}">${esc(t.status)}</span></td>
+      <td class="amount ${cls}">${esc(aed.format(amount))}</td>
+    </tr>`;
+  }).join("");
+  content.innerHTML = `
+    <table>
+      <thead><tr>
+        <th scope="col">Date</th><th scope="col">Merchant</th><th scope="col">Category</th>
+        <th scope="col">Status</th><th scope="col" class="amount">Amount</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${data.next_cursor ? '<p class="more">More transactions exist — ask for the next page.</p>' : ""}`;
+  reportSize();
+}
+</script>
+</body>
+</html>
