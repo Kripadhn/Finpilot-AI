@@ -215,6 +215,7 @@ class BankService:
                 "merchant_name": row["merchant_name"],
                 "category": row["category"],
                 "description": row["description"],
+                "reference": row["reference"],
             }
             for row in items
         ]
