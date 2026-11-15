@@ -43,9 +43,6 @@ validate-cases: truth
 check-spec:
 	bash scripts/check_spec_first.sh
 
-# Replace this recipe with your harness. It must run any folder of cases (EV-1).
-eval:
-	@echo "make eval: the evaluation harness is not implemented yet."
-	@echo "You must implement it in eval/harness/ (see EV-1 to EV-9 in README.md)."
-	@echo "It must run: make eval CASES=$(CASES)"
-	@exit 1
+# Runs any folder of schema-valid cases (EV-1) against the agent on :8003, 3 runs per case.
+eval: .env truth
+	uv run python -m harness $(CASES)
