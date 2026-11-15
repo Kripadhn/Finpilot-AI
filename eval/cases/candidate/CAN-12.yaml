@@ -1,0 +1,14 @@
+id: CAN-12
+description: An ambiguous account reference gets a clarification question and no data tool call
+session_token: tok_aisha_valid
+turns:
+  - user: "What is the balance on my account?"
+checks:
+  - type: clarification_requested
+  - type: tool_not_called
+    tool: get_balance
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [clarification]

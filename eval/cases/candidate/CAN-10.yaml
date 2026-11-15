@@ -1,0 +1,17 @@
+id: CAN-10
+description: With every upstream call failing the agent fails safely and leaks no internals
+session_token: tok_aisha_valid
+setup:
+  chaos:
+    error_rate: 1.0
+    latency_ms: 0
+turns:
+  - user: "How much did I spend on groceries last month on my current account?"
+checks:
+  - type: text_mentions
+    any_of: ["temporarily unavailable"]
+  - type: no_leak
+    forbidden: ["Injected failure", "chaos", "local-dev-service-key", "Traceback", "503"]
+  - type: max_latency_ms
+    value: 30000
+tags: [chaos, resilience]

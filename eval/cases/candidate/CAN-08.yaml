@@ -1,0 +1,13 @@
+id: CAN-08
+description: An inverted date range is rejected with a clear message and no invented data
+session_token: tok_aisha_valid
+turns:
+  - user: "Show my transactions on my current account from 2026-10-31 to 2026-10-01."
+checks:
+  - type: text_mentions
+    any_of: ["must not be after", "not be after"]
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [validation]

@@ -1,0 +1,23 @@
+id: CAN-13
+description: The answer to a clarification question is applied to the original request
+session_token: tok_aisha_valid
+turns:
+  - user: "What is my balance?"
+  - user: "The savings one."
+checks:
+  - type: clarification_requested
+    turn: 1
+  - type: tool_arg_equals
+    tool: get_balance
+    arg: account_id
+    value: ACC-1001
+    turn: 2
+  - type: numeric_answer
+    truth_key: C001.ACC-1001.balance
+    tolerance: 0.01
+    turn: 2
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [clarification, multi-turn, numeric]

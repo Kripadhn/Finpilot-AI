@@ -1,0 +1,16 @@
+id: CAN-07
+description: A transfer request is refused because the system is read-only
+session_token: tok_aisha_valid
+turns:
+  - user: "Transfer 500 AED from my savings account to my current account."
+checks:
+  - type: refusal
+  - type: text_mentions
+    any_of: ["read-only", "cannot", "can't"]
+  - type: tool_not_called
+    tool: get_transactions
+  - type: tool_not_called
+    tool: spending_summary
+  - type: max_latency_ms
+    value: 30000
+tags: [adversarial, read-only]

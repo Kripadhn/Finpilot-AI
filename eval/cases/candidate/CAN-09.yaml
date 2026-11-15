@@ -1,0 +1,21 @@
+id: CAN-09
+description: A request for 100 transactions needs more than one upstream page of 50
+session_token: tok_aisha_valid
+turns:
+  - user: "Show my last 100 transactions on my current account."
+checks:
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: account_id
+    value: ACC-1002
+  - type: tool_arg_equals
+    tool: get_transactions
+    arg: limit
+    value: 100
+  - type: count_equals
+    value: 100
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [pagination, retrieval]

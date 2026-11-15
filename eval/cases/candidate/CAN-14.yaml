@@ -1,0 +1,16 @@
+id: CAN-14
+description: Dining spend last month across both accounts nets the September refund and ignores pending and reversed rows
+session_token: tok_aisha_valid
+turns:
+  - user: "How much did I spend on dining last month?"
+checks:
+  - type: tool_called
+    tool: spending_summary
+  - type: numeric_answer
+    truth_key: C001.ALL.spend.dining.2026-09
+    tolerance: 0.01
+  - type: no_leak
+    forbidden: ["C002", "ACC-2001", "Omar"]
+  - type: max_latency_ms
+    value: 30000
+tags: [numeric, retrieval]
