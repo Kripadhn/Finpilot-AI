@@ -66,7 +66,8 @@ class AgentLoop:
             span.set_attribute("agent.prompt_version", PROMPT_VERSION)
             response = await self._run_turn_inner(session_token, conversation_id, message)
             response.trace_id = current_trace_id()
-            response.usage.setdefault("model", self._config.llm_model)
+            response.usage.setdefault("model", "none")
+            response.usage.setdefault("model_calls", 0)
             response.usage["latency_ms"] = round((time.perf_counter() - started) * 1000)
             span.set_attribute("agent.outcome", response.structured.get("outcome", ""))
         return response
@@ -100,11 +101,15 @@ class AgentLoop:
         gate = await mcp.call("list_accounts", {})
         tool_calls = [_record(gate)]
         if not gate.ok or not gate.structured:
+            unavailable = "temporarily unavailable" in gate.text
             return TurnResponse(
                 conversation_id=conversation_id or "",
                 text=gate.text or "The session is not valid. Please authenticate again.",
                 tool_calls=tool_calls,
-                structured={"outcome": "error", "error": "session_invalid"},
+                structured={
+                    "outcome": "error",
+                    "error": "upstream_unavailable" if unavailable else "session_invalid",
+                },
                 usage=usage,
             )
         accounts = gate.structured["accounts"]
@@ -292,6 +297,7 @@ class AgentLoop:
         usage["input_tokens"] += reply.input_tokens
         usage["output_tokens"] += reply.output_tokens
         usage["model"] = reply.model
+        usage["model_calls"] = usage.get("model_calls", 0) + 1
         return reply
 
     # ---------- composing answers ----------

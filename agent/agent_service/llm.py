@@ -141,9 +141,21 @@ def _write_fixture(
     )
 
 
+class NullProvider:
+    """No model: the agent plans with its deterministic router only (documented CI mode)."""
+
+    async def chat(self, messages: list[dict], tools: list[dict]) -> LLMReply:
+        raise UpstreamUnavailableError("No language model is configured (LLM_PROVIDER=none).")
+
+    async def aclose(self) -> None:
+        return None
+
+
 def make_provider(config: Settings):
+    if config.llm_provider == "none":
+        return NullProvider()
     if config.llm_provider == "replay":
         return ReplayProvider(config)
     if config.llm_provider == "ollama":
         return OllamaProvider(config)
-    raise ValueError(f"Unknown LLM_PROVIDER: {config.llm_provider} (use ollama or replay)")
+    raise ValueError(f"Unknown LLM_PROVIDER: {config.llm_provider} (use ollama, replay or none)")
