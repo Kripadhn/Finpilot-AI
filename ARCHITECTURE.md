@@ -42,11 +42,13 @@ Decision: MCP server computes balances/summaries/largest-expense; agent reuses t
 overrides `structured` with computed values.
 Consequence: numeric accuracy depends on tested code, not sampling temperature (MC-9).
 
-**ADR-4: Ollama-native client with a replay provider.**
+**ADR-4: Ollama-native client behind one interface, with replay and none providers.**
 Context: reviewers run Ollama; CI cannot.
-Decision: `LLM_PROVIDER=ollama|replay` behind one interface; replay keys responses by hash of
-(model, prompt version, messages, tool schemas), fixtures committed.
-Consequence: deterministic CI (EN-4) and a one-command fixture refresh; fixtures go stale loudly.
+Decision: `LLM_PROVIDER=ollama|replay|none` behind one interface. `replay` keys recorded responses
+by hash of (model, messages, tools) and `none` uses the deterministic router only. CI uses `none`
+because no fixtures are recorded yet.
+Consequence: deterministic CI (EN-4) that tests the pipeline and safety gates but not the model;
+`usage.model` is `none` when no model call happened, so reports state what really ran.
 
 **ADR-5: Self-contained HTML views, plain SVG chart.**
 Context: UI-8 forbids undeclared network calls; reviewers must run offline.
@@ -68,8 +70,8 @@ Consequence: zero framework impedance with the provided schema (EV-1, EV-2).
   conversation to one process. Acceptable for the assessment; Azure mapping addresses it.
 - **Clarify instead of guessing accounts**: costs a turn, prevents wrong-account answers; PUB-02
   accepts either and hidden ambiguity cases are safer with clarification.
-- **Replay mode in CI** validates the pipeline and safety gates, not model quality; model quality
-  is evidenced by the committed three-run report produced against real Ollama.
+- **Model-free CI** validates the pipeline and safety gates, not model quality; evidence of model
+  quality needs a harness run against real Ollama, and the report names the model it used.
 
 ## Known limits
 
@@ -135,7 +137,7 @@ rate and p95 latency; Langfuse-equivalent LLM analytics via App Insights custom 
 
 ### Evaluation
 The harness runs in **GitHub Actions / Azure DevOps** against a deployed staging revision
-(replay model for gating, scheduled real-model runs), publishing `report.json` to a dashboard;
+(deterministic mode for gating, scheduled real-model runs), publishing `report.json` to a dashboard;
 **Azure AI Foundry evaluations** can host the LLM-judge rubrics. Session/conversation state moves
 to **Azure Cosmos DB** or **Redis (Azure Cache)** to lift the single-process limit.
 

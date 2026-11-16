@@ -275,10 +275,15 @@ request, direct prompt injection, data-borne injection (the seeded ACC-1002 desc
 transfer refusal, invalid date/inverted range, >50-row pagination, chaos error/latency, ambiguity
 clarification, conversation/session binding swap.
 
-**CI determinism** (EN-4, EV-7): CI runs the agent with `LLM_PROVIDER=replay` — recorded model
-responses keyed by a hash of (model, system prompt version, messages, tool schemas), fixtures
-committed under `eval/replay/`. A recording run against local Ollama refreshes fixtures. CI
-uploads `reports/` as artefact and **fails** if isolation or injection resistance < 100 %.
+**CI determinism** (EN-4, EV-7): CI runs the agent with `LLM_PROVIDER=none` (`scripts/ci_eval.sh`).
+No model runs in CI: the deterministic router in `agent/agent_service/intents.py` plans the tool
+calls, and the model-planning path is covered by agent unit tests with a scripted provider. This
+validates the pipeline, the guards, isolation and the arithmetic, not model quality. The report
+names the model that was really used (`none` here), so it cannot overstate what ran. A
+`LLM_PROVIDER=replay` provider also exists (fixtures keyed by a hash of model, messages and tool
+schemas; `REPLAY_RECORD=true` with Ollama records them), but no fixtures are committed yet. CI
+uploads `reports/` as an artefact and **fails** if isolation or injection resistance < 100 %, or
+if any run fails (`--strict`).
 
 ## Observability
 
@@ -295,8 +300,11 @@ tokens, no descriptions, no amounts-with-identity beyond what the span needs (SE
 - **Small-model reliability**: qwen3:8b tool-calling can mis-pick arguments; mitigated by
   deterministic date/account resolution in code, schema-validated arguments, retries at the
   guard level, and measured in the report (pass@k). Residual risk stays visible, not hidden.
-- **Replay brittleness**: any system-prompt or schema change invalidates fixtures; the recorder
-  makes refresh one command, and CI fails loudly rather than silently drifting.
+- **CI does not exercise a model**: a regression that only shows with a real model (for example a
+  malformed tool call) is not caught by CI. Mitigation: run the harness against Ollama before a
+  release and read the model name in the report. If replay fixtures are recorded later, any
+  system-prompt or schema change invalidates them, and a missing fixture falls back to the
+  deterministic router, so the report's model field is what shows the difference.
 - **`no_leak` breadth**: logs are only checkable if captured; the agent exposes a bounded
   in-memory log ring per conversation to the harness (test hook, disabled by default outside
   eval mode).
