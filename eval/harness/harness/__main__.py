@@ -26,6 +26,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-gate", action="store_true", help="do not fail the exit code on gate failures"
     )
+    parser.add_argument(
+        "--strict", action="store_true", help="also fail the exit code when any run failed"
+    )
     args = parser.parse_args(argv)
 
     config = settings()
@@ -79,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Reports: {json_path}  {md_path}")
     for failure in gate:
         print(f"GATE FAILED - {failure}")
+    if args.strict and rate["passed"] != rate["total"]:
+        print(f"STRICT: {rate['total'] - rate['passed']} run(s) failed")
+        return 1
     return 1 if gate and not args.no_gate else 0
 
 

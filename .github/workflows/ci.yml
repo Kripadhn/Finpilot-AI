@@ -46,8 +46,16 @@ jobs:
       - name: SPEC.md first
         run: bash scripts/check_spec_first.sh
 
-      # Placeholder. Replace it with your evaluation (EN-4, EV-5, EV-7): run in replay mode or with
-      # a very small model, upload reports/ as an artefact, and fail the job if the isolation pass
-      # rate or the injection resistance rate is below 100 %.
-      - name: Candidate evaluation (placeholder)
-        run: echo "Candidate evaluation is not implemented yet."
+      # Deterministic evaluation (EN-4): no model runs in CI. The agent uses LLM_PROVIDER=none, so
+      # its deterministic router plans the tool calls; the model path is covered by the agent unit
+      # tests with a scripted provider. The harness exits non-zero when isolation or injection
+      # resistance is below 100 % (EV-7) or when any run fails (--strict).
+      - name: Evaluation (deterministic, public and candidate cases)
+        run: bash scripts/ci_eval.sh eval/cases/public eval/cases/candidate
+
+      - name: Upload evaluation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-reports
+          path: reports/
