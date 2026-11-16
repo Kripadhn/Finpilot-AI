@@ -532,4 +532,72 @@ Keep your presentation short and structured. We assess clear communication.
 
 ## Your section: how to run this system
 
-> Replace this line. A reviewer must be able to run the system in 10 minutes or less (DO-1).
+Everything runs locally and for free. Python 3.12, `uv`, `make`, Docker with Compose and Node 22
+are the tools; Ollama serves the model. On Windows, use WSL 2 (the repository was also exercised
+from Git Bash, where `make` and Docker are not available, so use the commands in "Without Docker").
+
+### Quick start (with Docker)
+
+```bash
+make setup                 # copies .env.example to .env and installs dependencies (uv sync)
+ollama pull qwen3:8b       # the default model; Ollama must run on the host (ollama serve)
+make seed && make truth    # data/bank.db and data/ground_truth.json
+make up                    # mock API, MCP server, agent and host, each waits for its health check
+```
+
+Open **http://localhost:5173**, pick a customer in the Session menu and ask, for example:
+
+- "Show me my last 20 transactions on my savings account" (table view)
+- "Show my spending by category for October" (chart view; click a bar to list its transactions)
+- "How much of that was fuel?" (follow-up on the exact rows just shown)
+- "Show me Omar Haddad's transactions" (refused)
+
+`make down` stops everything. No model installed or Ollama stopped? The agent still answers with
+its deterministic router; set `LLM_PROVIDER=none` in `.env` to make that explicit. The grey line
+under each reply names the model, or `none` when no model was used.
+
+### Without Docker
+
+Run each command in its own terminal from the repository root (`make setup && make seed` first):
+
+```bash
+make api      # mock core banking API  :8001
+make mcp      # MCP server             :8002/mcp
+make agent    # agent, POST /chat      :8003
+make host     # chat host              :5173
+```
+
+### Evaluation
+
+```bash
+make eval CASES=eval/cases/public       # the 10 provided cases
+make eval CASES=eval/cases/candidate    # the 15 candidate cases (8 adversarial)
+make eval CASES=<any folder of schema-valid cases>
+```
+
+Each case runs 3 times. The harness writes `reports/report.json` and `reports/report.md`, and
+exits non-zero if the isolation or injection-resistance rate is below 100 %. The report names the
+model the agent really used, so a run without a model says `none`. CI runs the same harness
+without a model (`scripts/ci_eval.sh`, `LLM_PROVIDER=none`) and uploads `reports/` as an artefact.
+
+### Other commands
+
+| Command | Purpose |
+|---|---|
+| `make test` | all unit tests (mock API, shared code, MCP server, agent, harness) |
+| `make lint` | Ruff check and format check |
+| `make validate-cases` | validate every case folder against the schema and ground truth |
+| `make check-spec` | SPEC.md was committed before implementation code |
+| `docker compose --profile jaeger up -d` | Jaeger UI on http://localhost:16686 (set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` in `.env`) |
+
+### Ports and test sessions
+
+| Service | Port | | Token | Customer |
+|---|---|---|---|---|
+| Mock core banking API | 8001 | | `tok_aisha_valid` | Aisha, two accounts |
+| MCP server (`/mcp`) | 8002 | | `tok_omar_valid` | Omar |
+| Agent (`POST /chat`) | 8003 | | `tok_lina_valid` | Lina (dormant) |
+| Chat host | 5173 | | `tok_aisha_expired` | Aisha, expired |
+
+All secrets and settings live in `.env` (never committed); `.env.example` has synthetic values only.
+The design is in `SPEC.md` and `ARCHITECTURE.md`; AI assistance is recorded in `AI_USAGE.md`.
