@@ -3,7 +3,7 @@ CASES ?= eval/cases/public
 -include .env
 export
 
-.PHONY: setup seed truth api up down test lint validate-cases check-spec eval
+.PHONY: setup seed truth api mcp agent host up down test lint validate-cases check-spec eval
 
 setup: .env
 	uv sync
@@ -23,9 +23,19 @@ truth: data/bank.db
 api: .env data/bank.db
 	uv run uvicorn --app-dir mock-bank-api app.main:app --host 127.0.0.1 --port 8001
 
-# Extend docker-compose.yml so that this also starts your services.
+# Run the services without Docker, one per terminal: make api, make mcp, make agent, make host.
+mcp: .env
+	uv run python -m mcp_bank_server
+
+agent: .env
+	uv run python -m agent_service
+
+host:
+	node host/server.mjs
+
+# Starts the mock API, MCP server, agent and host and waits until each reports healthy.
 up: .env
-	docker compose up -d --build
+	docker compose up -d --build --wait
 
 down:
 	docker compose down

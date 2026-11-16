@@ -1,5 +1,7 @@
-# `make up` starts the mock API. Add your services here (EN-1).
+# `make up` starts the mock API, MCP server, agent and chat host (EN-1), each with a health check.
 # Optional tools: docker compose --profile ollama --profile jaeger up -d
+# The agent reaches Ollama on the host by default. With `--profile ollama`, set
+# OLLAMA_BASE_URL=http://ollama:11434 in .env instead.
 services:
   mock-bank-api:
     build:
@@ -12,6 +14,47 @@ services:
       - "127.0.0.1:8001:8001"
     volumes:
       - ./data:/app/data
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: mcp-server/Dockerfile
+    env_file: .env
+    environment:
+      MOCK_API_URL: http://mock-bank-api:8001
+      MCP_HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:8002:8002"
+    depends_on:
+      mock-bank-api:
+        condition: service_healthy
+
+  agent:
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    env_file: .env
+    environment:
+      MCP_URL: http://mcp-server:8002/mcp
+      AGENT_HOST: 0.0.0.0
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL_IN_DOCKER:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8003:8003"
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+
+  host:
+    build:
+      context: .
+      dockerfile: host/Dockerfile
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      agent:
+        condition: service_healthy
 
   ollama:
     profiles: [ollama]

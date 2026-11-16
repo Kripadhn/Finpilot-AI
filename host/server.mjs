@@ -28,6 +28,6 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end("not found");
   }
-}).listen(port, "127.0.0.1", () => {
+}).listen(port, process.env.HOST_BIND || "127.0.0.1", () => {
   console.log(`thin host on http://localhost:${port}`);
 });
