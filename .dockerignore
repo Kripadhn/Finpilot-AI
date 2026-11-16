@@ -2,7 +2,9 @@
 .venv
 data
 reports
-eval
+eval/cases
+eval/schema
+eval/replay
 docs
 **/__pycache__
 .env
