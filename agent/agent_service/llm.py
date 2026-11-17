@@ -60,7 +60,8 @@ class OllamaProvider:
                 "messages": messages,
                 "tools": tools,
                 "stream": False,
-                "options": {"temperature": 0},
+                "keep_alive": self._config.llm_keep_alive,
+                "options": {"temperature": 0, "num_ctx": self._config.llm_num_ctx},
             }
             if self._config.llm_think.lower() in ("true", "false"):
                 body["think"] = self._config.llm_think.lower() == "true"

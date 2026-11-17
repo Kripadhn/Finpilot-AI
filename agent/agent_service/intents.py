@@ -96,6 +96,19 @@ def classify(message: str) -> Intent:
     return Intent("other", wants_single_account=False)
 
 
+_INTENT_TOOLS = {
+    "balance": {"get_balance"},
+    "transactions": {"get_transactions"},
+    "spending": {"spending_summary"},
+    "largest": {"spending_summary"},
+}
+
+
+def expected_tools(message: str) -> set[str] | None:
+    """Tools that can answer what the customer asked, or None when the intent is unclear."""
+    return _INTENT_TOOLS.get(classify(message).kind)
+
+
 def resolve_account(message: str, accounts: list[dict[str, Any]]) -> dict[str, Any] | None:
     """The account the message names, or the only account; None when genuinely ambiguous."""
     lowered = message.lower()

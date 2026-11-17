@@ -246,6 +246,12 @@ class AgentLoop:
                 if call.name == "list_accounts":
                     continue  # already called as the session gate
                 plan.append((call.name, safe_args))
+        expected = intents.expected_tools(message)
+        if plan and expected and not any(name in expected for name, _ in plan):
+            # The model picked tools that cannot answer this request (for example a spending
+            # summary for "show my dining transactions"): code decides, not the model.
+            logger.info("model tool does not fit the request", extra={"status": "tool_mismatch"})
+            plan = []
         if not plan:
             plan = intents.fallback_plan(message, accounts, today)
             if plan:

@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 180.0
     # qwen3-style thinking: false (default) is far faster on CPU; true; or auto to omit the flag.
     llm_think: str = "false"
+    llm_num_ctx: int = 4096  # fixed context window: smaller means faster on CPU
+    llm_keep_alive: str = "30m"  # keep the model loaded between turns
     replay_dir: str = "eval/replay"
     replay_record: bool = False  # with provider=ollama, also record fixtures for replay
 

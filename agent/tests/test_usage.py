@@ -43,3 +43,20 @@ def test_make_provider_selects_by_configuration():
     assert isinstance(make_provider(Settings(llm_provider="ollama")), OllamaProvider)
     with pytest.raises(ValueError):
         make_provider(Settings(llm_provider="mystery"))
+
+
+async def test_model_tool_that_cannot_answer_is_replaced_by_the_deterministic_plan(agent, provider):
+    # The model proposes a spending summary for a request that asks for a transaction list.
+    provider.script(("spending_summary", {"from_date": "2026-10-01", "to_date": "2026-10-31"}))
+    response = await agent.run_turn(AISHA, None, "Show my dining transactions in October.")
+    names = [call["name"] for call in response.tool_calls if call["name"] != "list_accounts"]
+    assert names and set(names) == {"get_transactions"}
+    assert any(u["uri"] == "ui://bank/transactions" for u in response.ui_resources)
+    assert response.usage["model_calls"] == 1  # the model was asked, then overruled
+
+
+async def test_model_tool_that_fits_is_kept(agent, provider):
+    provider.script(("spending_summary", {"from_date": "2026-09-01", "to_date": "2026-09-30"}))
+    response = await agent.run_turn(AISHA, None, "How much did I spend last month?")
+    names = [call["name"] for call in response.tool_calls if call["name"] != "list_accounts"]
+    assert names == ["spending_summary"]
