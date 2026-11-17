@@ -1,0 +1,47 @@
+name: Release images
+
+# Publishes the four service images to GitHub Container Registry when a version tag is pushed:
+#   git tag v1.0.0 && git push origin v1.0.0
+# Clients then run docker-compose.release.yml with TAG=v1.0.0 and no source checkout.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { service: mock-bank-api, dockerfile: mock-bank-api/Dockerfile }
+          - { service: mcp-server, dockerfile: mcp-server/Dockerfile }
+          - { service: agent, dockerfile: agent/Dockerfile }
+          - { service: host, dockerfile: host/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name (GHCR needs lower case)
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE=ghcr.io/${owner}/agentic-ai-bank-${{ matrix.service }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+            ${{ env.IMAGE }}:latest

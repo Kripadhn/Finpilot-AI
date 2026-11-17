@@ -1,0 +1,58 @@
+# Packaged product: runs prebuilt images, no source tree and no build needed.
+#
+#   cp .env.example .env
+#   docker compose -f docker-compose.release.yml up -d --wait
+#   open http://localhost:5173
+#
+# Images come from IMAGE_REGISTRY (default ghcr.io/kripadhn) at TAG (default latest); see
+# .github/workflows/release.yml. The agent reaches Ollama on the host (ollama serve) unless
+# OLLAMA_BASE_URL_IN_DOCKER points elsewhere. Seeded bank data lives in the bank-data volume.
+services:
+  mock-bank-api:
+    image: ${IMAGE_REGISTRY:-ghcr.io/kripadhn}/agentic-ai-bank-mock-bank-api:${TAG:-latest}
+    env_file: .env
+    environment:
+      BANK_DB_PATH: /app/data/bank.db
+    volumes:
+      - bank-data:/app/data
+    restart: unless-stopped
+
+  mcp-server:
+    image: ${IMAGE_REGISTRY:-ghcr.io/kripadhn}/agentic-ai-bank-mcp-server:${TAG:-latest}
+    env_file: .env
+    environment:
+      MOCK_API_URL: http://mock-bank-api:8001
+      MCP_HOST: 0.0.0.0
+    depends_on:
+      mock-bank-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  agent:
+    image: ${IMAGE_REGISTRY:-ghcr.io/kripadhn}/agentic-ai-bank-agent:${TAG:-latest}
+    env_file: .env
+    environment:
+      MCP_URL: http://mcp-server:8002/mcp
+      AGENT_HOST: 0.0.0.0
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL_IN_DOCKER:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  host:
+    image: ${IMAGE_REGISTRY:-ghcr.io/kripadhn}/agentic-ai-bank-host:${TAG:-latest}
+    environment:
+      DEMO_USER: ${DEMO_USER:-demo}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:5173:5173"
+    depends_on:
+      agent:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  bank-data:

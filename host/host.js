@@ -4,7 +4,8 @@
    forwards tools/call to the agent's /ui/tool endpoint — the only declared network path. */
 "use strict";
 
-const AGENT_URL = "http://localhost:8003";
+// Empty means same origin: server.mjs proxies /chat and /ui/tool to the agent.
+const AGENT_URL = window.AGENT_URL || "";
 const chat = document.getElementById("chat");
 const form = document.getElementById("form");
 const input = document.getElementById("input");

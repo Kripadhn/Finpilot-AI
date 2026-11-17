@@ -50,8 +50,13 @@ services:
     build:
       context: .
       dockerfile: host/Dockerfile
+    environment:
+      # Optional showcase password (HTTP Basic). Empty means no password.
+      DEMO_USER: ${DEMO_USER:-demo}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
     ports:
-      - "127.0.0.1:5173:5173"
+      # Set BIND_ADDRESS=0.0.0.0 to reach the host from another machine (put HTTPS in front).
+      - "${BIND_ADDRESS:-127.0.0.1}:5173:5173"
     depends_on:
       agent:
         condition: service_healthy

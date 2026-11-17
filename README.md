@@ -600,4 +600,6 @@ without a model (`scripts/ci_eval.sh`, `LLM_PROVIDER=none`) and uploads `reports
 | Chat host | 5173 | | `tok_aisha_expired` | Aisha, expired |
 
 All secrets and settings live in `.env` (never committed); `.env.example` has synthetic values only.
-The design is in `SPEC.md` and `ARCHITECTURE.md`; AI assistance is recorded in `AI_USAGE.md`.
+Packaging, showing it from another machine and running it in an automated job are in
+`docs/DEMO.md`. The design is in `SPEC.md` and `ARCHITECTURE.md`; AI assistance is recorded in
+`AI_USAGE.md`.
