@@ -11,3 +11,4 @@ data/*
 reports/*
 !reports/.gitkeep
 !reports/report.md
+!reports/report-deterministic.md

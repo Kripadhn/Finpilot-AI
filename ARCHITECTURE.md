@@ -71,7 +71,8 @@ Consequence: zero framework impedance with the provided schema (EV-1, EV-2).
 - **Clarify instead of guessing accounts**: costs a turn, prevents wrong-account answers; PUB-02
   accepts either and hidden ambiguity cases are safer with clarification.
 - **Model-free CI** validates the pipeline and safety gates, not model quality; evidence of model
-  quality needs a harness run against real Ollama, and the report names the model it used.
+  quality needs a harness run against real Ollama. `reports/report.md` is such a run (`qwen3:8b`,
+  CPU only); `reports/report-deterministic.md` is the model-free run. Reports name the model used.
 
 ## Known limits
 

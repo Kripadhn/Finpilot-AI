@@ -5,9 +5,9 @@
 - **Claude Code** (Anthropic) as the coding agent, driven interactively from a staged brief that I
   wrote. The model changed during the work: early commits are co-authored by Claude Fable 5, later
   ones by Claude Sonnet 5.5 (see the `Co-Authored-By` trailers in `git log`).
-- **Ollama** is the runtime model of the product (default `qwen3:8b`), not an authoring tool. At the
-  time of the final evaluation run no model was installed on the development machine, so the
-  committed report reflects a run without a model (`none`), not model quality.
+- **Ollama** is the runtime model of the product (default `qwen3:8b`), not an authoring tool. The
+  committed `reports/report.md` was produced against `qwen3:8b` on a CPU-only machine;
+  `reports/report-deterministic.md` is the earlier run without a model.
 
 ## Where each tool was used
 
@@ -35,6 +35,13 @@ Found by running things, then fixed:
 - **A banking-service outage was labelled `session_invalid`.** It is now `upstream_unavailable`.
 - **`SPEC.md` and `ARCHITECTURE.md` described CI replaying recorded model responses.** No fixtures
   exist, CI uses `LLM_PROVIDER=none`; both documents were corrected.
+- **A failure the harness found (EV-8).** The first run against `qwen3:8b` failed PUB-10 three times:
+  the model chose `spending_summary` for "Show my dining transactions in October". The model-free run
+  had never shown this. The loop now overrules a model tool that cannot answer the request
+  (`agent/agent_service/loop.py`), with unit tests; the next run passed PUB-10 3 of 3.
+- **Cold model.** The first case to reach the model took 37 to 56 seconds because the model was still
+  loading; the agent now loads it at startup. Qwen3 thinking mode took over 300 seconds for one call
+  on this CPU, so `LLM_THINK=false` is the default.
 - **MCP SDK differences.** The installed SDK (2.x) renamed `FastMCP` to `MCPServer` and uses
   snake_case result fields; I read the installed code instead of relying on the 1.x API.
 - **Harness trust.** A deliberately wrong case must fail all runs and trip the gate; it does.
@@ -51,5 +58,6 @@ Rejected on purpose:
 ## Verification limits
 
 `make` and Docker were not available on the development machine, so the Makefile targets and the
-compose services were not run there; the equivalent `uv run` commands were. No metric in the report
-was produced by anything other than a harness run against the running services.
+compose services, the release compose file and the release workflow were not run there; the
+equivalent `uv run` commands were. No metric in the report was produced by anything other than a
+harness run against the running services. The report still has 3 failing runs (CAN-11 latency).
