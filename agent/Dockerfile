@@ -14,7 +14,7 @@ RUN uv sync --locked --no-dev --package bank-agent
 ENV PATH="/app/.venv/bin:$PATH" AGENT_HOST=0.0.0.0
 EXPOSE 8003
 
-HEALTHCHECK --interval=10s --timeout=3s --retries=6 \
+HEALTHCHECK --interval=10s --timeout=3s --retries=6 --start-period=120s \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health')"
 
 CMD ["python", "-m", "agent_service"]

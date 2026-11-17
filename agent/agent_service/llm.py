@@ -92,6 +92,23 @@ class OllamaProvider:
             _write_fixture(self._config, messages, tools, reply)
         return reply
 
+    async def warm_up(self) -> None:
+        """Load the model into memory once at startup so the first customer is not slow.
+
+        Best effort: a missing model or a stopped Ollama must never stop the agent starting.
+        """
+        try:
+            await self._client.post(
+                "/api/generate",
+                json={
+                    "model": self._config.llm_model,
+                    "prompt": "",
+                    "keep_alive": self._config.llm_keep_alive,
+                },
+            )
+        except httpx.HTTPError:
+            return
+
     async def aclose(self) -> None:
         await self._client.aclose()
 

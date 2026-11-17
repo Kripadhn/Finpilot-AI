@@ -42,6 +42,9 @@ async def lifespan(app: FastAPI):
     setup_logging("agent", secrets=[config.mock_service_key, config.mock_admin_key])
     setup_tracing("bank-agent")
     provider = make_provider(config)
+    warm_up = getattr(provider, "warm_up", None)
+    if warm_up:
+        await warm_up()
     store = ConversationStore(
         max_conversations=config.max_conversations,
         ttl_s=config.conversation_ttl_s,

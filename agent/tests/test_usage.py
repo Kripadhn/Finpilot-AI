@@ -60,3 +60,9 @@ async def test_model_tool_that_fits_is_kept(agent, provider):
     response = await agent.run_turn(AISHA, None, "How much did I spend last month?")
     names = [call["name"] for call in response.tool_calls if call["name"] != "list_accounts"]
     assert names == ["spending_summary"]
+
+
+async def test_warm_up_never_stops_the_agent_when_ollama_is_down():
+    provider = OllamaProvider(Settings(ollama_base_url="http://127.0.0.1:9", llm_timeout_s=1))
+    await provider.warm_up()  # must swallow the connection error
+    await provider.aclose()
