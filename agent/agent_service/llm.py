@@ -55,16 +55,16 @@ class OllamaProvider:
     async def chat(self, messages: list[dict], tools: list[dict]) -> LLMReply:
         started = time.perf_counter()
         try:
-            response = await self._client.post(
-                "/api/chat",
-                json={
-                    "model": self._config.llm_model,
-                    "messages": messages,
-                    "tools": tools,
-                    "stream": False,
-                    "options": {"temperature": 0},
-                },
-            )
+            body: dict = {
+                "model": self._config.llm_model,
+                "messages": messages,
+                "tools": tools,
+                "stream": False,
+                "options": {"temperature": 0},
+            }
+            if self._config.llm_think.lower() in ("true", "false"):
+                body["think"] = self._config.llm_think.lower() == "true"
+            response = await self._client.post("/api/chat", json=body)
             response.raise_for_status()
         except httpx.HTTPError as error:
             raise UpstreamUnavailableError(

@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     llm_model: str = "qwen3:8b"
     ollama_base_url: str = "http://localhost:11434"
     llm_timeout_s: float = 180.0
+    # qwen3-style thinking: false (default) is far faster on CPU; true; or auto to omit the flag.
+    llm_think: str = "false"
     replay_dir: str = "eval/replay"
     replay_record: bool = False  # with provider=ollama, also record fixtures for replay
 
