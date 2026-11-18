@@ -11,7 +11,7 @@ members = [
     "bank-agent",
     "bank-eval-harness",
     "bank-shared",
-    "dvt-agentic-bank-assessment",
+    "Finpilot-AI",
     "mcp-bank-server",
 ]
 
@@ -435,7 +435,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dvt-agentic-bank-assessment"
+name = "Finpilot-AI"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

@@ -34,7 +34,7 @@ logger = logging.getLogger("mcp_bank_server")
 _tracer = tracer("mcp_bank_server")
 
 mcp = MCPServer(
-    name="dvt-agentic-bank",
+    name="Finpilot-AI",
     instructions=(
         "Read-only banking tools for the authenticated customer. Identity comes from the "
         "session bound to the connection; tools never accept a customer identifier. "
