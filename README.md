@@ -1,4 +1,5 @@
-# DVT Agentic Bank – Technical Assessment
+# FinPilot AI — Agentic Intelligence for Financial Services: 
+FinPilot AI is an agentic AI platform designed to automate and intelligently orchestrate financial workflows using LLM-powered agents, tools, structured reasoning, secure execution, and evaluation-driven development.
 
 ## 1. Purpose
 
@@ -28,7 +29,7 @@ The customer can ask questions such as:
 - "Show my spending by category for October."
 - "And how much of that was fuel?"
 
-The agent must get data **only through your MCP server**. The MCP server calls the **mock core banking API** that DVT gives you.
+The agent must get data **only through your MCP server**. The MCP server calls the **mock core banking API** .
 
 ---
 
@@ -43,14 +44,14 @@ The agent must get data **only through your MCP server**. The MCP server calls t
 | Data | Use only the synthetic data in this repository. Do not use real customer data. |
 | Work flow | Work on a branch. Open a pull request to `main`. Make small commits with clear messages. |
 | Language | Python 3.12+ or TypeScript (Node 22 LTS), or both. The mock API is Python. |
-| Help | You can ask clarification questions by email to Warren, with Saurabh in copy. |
+
 
 ---
 
 ## 4. Target architecture
 
 ```
-┌──────────────────────────── YOU BUILD ─────────────────────────────┐   ┌──── DVT GIVES ─────┐
+┌──────────────────────────── YOU BUILD ─────────────────────────────┐   ┌──── Core Banking ─────┐
 │                                                                     │   │                    │
 │  Host (chat UI)  ◄─ MCP Apps views (ui://…) ─┐                      │   │  Mock Core Banking │
 │      │  POST /chat                           │                      │   │  API (FastAPI)     │
@@ -189,7 +190,7 @@ Use `basic-host` to test each view by itself.
 
 ---
 
-## 6. What DVT gives you (starter)
+## 6. What is initial project (starter)
 
 ### 6.1 Repository layout
 
